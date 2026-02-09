@@ -9,7 +9,6 @@
     "watch": "webpack --mode development --watch"
   },
   "dependencies": {
-    "@geotab/zenith": "^3.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

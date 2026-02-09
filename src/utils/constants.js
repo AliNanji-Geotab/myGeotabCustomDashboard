@@ -13,34 +13,34 @@ export const DIAGNOSTICS = {
 
 // Colors for charts and visualizations
 export const COLORS = {
-  primary: '#0078D4',
-  success: '#107C10',
-  warning: '#FFB900',
-  danger: '#D83B01',
-  neutral: '#605E5C',
+  primary: '#4F46E5',
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  neutral: '#64748B',
   
   // Usage breakdown colors
-  driving: '#0078D4',
-  idle: '#FFB900',
-  stopped: '#E1DFDD',
+  driving: '#10B981',
+  idle: '#F59E0B',
+  stopped: '#E5E7EB',
   
   // Exception severity colors
-  critical: '#D83B01',
-  warning: '#FFB900',
-  info: '#0078D4',
+  critical: '#EF4444',
+  warning: '#F59E0B',
+  info: '#3B82F6',
   
-  // Chart palette
+  // Chart palette - Vibrant & Colorful
   chartPalette: [
-    '#0078D4', // Blue
-    '#D83B01', // Red/Orange
-    '#FFB900', // Yellow
-    '#107C10', // Green
-    '#5C2D91', // Purple
-    '#008272', // Teal
-    '#E81123', // Red
-    '#00BCF2', // Light Blue
-    '#FF8C00', // Dark Orange
-    '#00B294'  // Sea Green
+    '#4F46E5', // Indigo
+    '#10B981', // Emerald
+    '#F59E0B', // Amber
+    '#EC4899', // Pink
+    '#06B6D4', // Cyan
+    '#8B5CF6', // Violet
+    '#F97316', // Orange
+    '#14B8A6', // Teal
+    '#EF4444', // Red
+    '#3B82F6'  // Blue
   ]
 };
 

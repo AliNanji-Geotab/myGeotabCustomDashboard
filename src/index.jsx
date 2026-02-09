@@ -6,7 +6,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-import '@geotab/zenith/dist/index.css';
 import './styles/dashboard.css';
 
 // MyGeotab Add-In registration
