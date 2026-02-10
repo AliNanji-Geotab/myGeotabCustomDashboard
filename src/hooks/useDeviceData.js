@@ -33,7 +33,7 @@ export function useDeviceData(api, deviceId, dateRange) {
   const [usageBreakdown, setUsageBreakdown] = useState(null);
   const [exceptionsByRule, setExceptionsByRule] = useState([]);
   
-  const { multiCall, getAddresses } = useGeotabApi(api);
+  const { multiCall, getAddresses, getAllWithFeed } = useGeotabApi(api);
   const abortControllerRef = useRef(null);
 
   /**
@@ -64,83 +64,87 @@ export function useDeviceData(api, deviceId, dateRange) {
       const recentFromDate = toISOString(recentDate);
       const nowDate = toISOString(new Date());
 
-      // Make all API calls in parallel
-      const results = await multiCall([
-        // 0: Device details
-        ['Get', { typeName: 'Device', search: { id: deviceId } }],
-        
-        // 1: Trips in date range
-        ['Get', { 
-          typeName: 'Trip', 
-          search: { 
-            deviceSearch: { id: deviceId }, 
-            fromDate, 
-            toDate 
-          } 
-        }],
-        
-        // 2: Exception events in date range
-        ['Get', { 
-          typeName: 'ExceptionEvent', 
-          search: { 
-            deviceSearch: { id: deviceId }, 
-            fromDate, 
-            toDate 
-          } 
-        }],
-        
-        // 3: Fill-up events
-        ['Get', { 
-          typeName: 'FillUp', 
-          search: { 
-            deviceSearch: { id: deviceId }, 
-            fromDate, 
-            toDate 
-          } 
-        }],
-        
-        // 4: Current fuel level (most recent)
-        ['Get', { 
-          typeName: 'StatusData', 
-          search: { 
-            diagnosticSearch: { id: DIAGNOSTICS.FUEL_LEVEL },
-            deviceSearch: { id: deviceId },
-            fromDate: recentFromDate,
-            toDate: nowDate
-          },
-          resultsLimit: 1
-        }],
-        
-        // 5: Current odometer (most recent)
-        ['Get', { 
-          typeName: 'StatusData', 
-          search: { 
-            diagnosticSearch: { id: DIAGNOSTICS.ODOMETER },
-            deviceSearch: { id: deviceId },
-            fromDate: recentFromDate,
-            toDate: nowDate
-          },
-          resultsLimit: 1
-        }],
-        
-        // 6: All rules (for exception names)
-        ['Get', { typeName: 'Rule' }],
-        
-        // 7: All drivers
-        ['Get', { typeName: 'User', search: { isDriver: true } }]
+      console.log('Fetching data for device:', deviceId, 'from:', fromDate, 'to:', toDate);
+
+      // Fetch trips separately using getAllWithFeed to ensure we get all trips
+      const tripsPromise = getAllWithFeed('Trip', {
+        deviceSearch: { id: deviceId },
+        fromDate,
+        toDate
+      });
+
+      // Make other API calls in parallel
+      const [tripsResult, otherResults] = await Promise.all([
+        tripsPromise,
+        multiCall([
+          // 0: Device details
+          ['Get', { typeName: 'Device', search: { id: deviceId } }],
+          
+          // 1: Exception events in date range
+          ['Get', { 
+            typeName: 'ExceptionEvent', 
+            search: { 
+              deviceSearch: { id: deviceId }, 
+              fromDate, 
+              toDate 
+            } 
+          }],
+          
+          // 2: Fill-up events
+          ['Get', { 
+            typeName: 'FillUp', 
+            search: { 
+              deviceSearch: { id: deviceId }, 
+              fromDate, 
+              toDate 
+            } 
+          }],
+          
+          // 3: Current fuel level (most recent)
+          ['Get', { 
+            typeName: 'StatusData', 
+            search: { 
+              diagnosticSearch: { id: DIAGNOSTICS.FUEL_LEVEL },
+              deviceSearch: { id: deviceId },
+              fromDate: recentFromDate,
+              toDate: nowDate
+            },
+            resultsLimit: 1
+          }],
+          
+          // 4: Current odometer (most recent)
+          ['Get', { 
+            typeName: 'StatusData', 
+            search: { 
+              diagnosticSearch: { id: DIAGNOSTICS.ODOMETER },
+              deviceSearch: { id: deviceId },
+              fromDate: recentFromDate,
+              toDate: nowDate
+            },
+            resultsLimit: 1
+          }],
+          
+          // 5: All rules (for exception names)
+          ['Get', { typeName: 'Rule' }],
+          
+          // 6: All drivers
+          ['Get', { typeName: 'User', search: { isDriver: true } }]
+        ])
       ]);
 
       // Process results
       const [
         deviceResult,
-        tripsResult,
         exceptionsResult,
         fuelUpsResult,
         fuelLevelResult,
         odometerResult,
         rulesResult,
         driversResult
-      ] = results;
+      ] = otherResults;
+
+      console.log('Trips fetched:', tripsResult?.length || 0);
+      console.log('Sample trip:', tripsResult?.[0]);
 
       // Set device
       const deviceData = deviceResult?.[0] || null;
@@ -200,7 +204,7 @@ export function useDeviceData(api, deviceId, dateRange) {
     } finally {
       setLoading(false);
     }
-  }, [api, deviceId, dateRange, multiCall]);
+  }, [api, deviceId, dateRange, multiCall, getAllWithFeed]);
 
   /**
    * Calculate usage statistics
@@ -224,8 +228,13 @@ export function useDeviceData(api, deviceId, dateRange) {
 
     // Sum distance and time
     const distanceDriven = tripsData.reduce((sum, t) => sum + (t.distance || 0), 0);
+    
+    // drivingDuration is in seconds (TimeSpan format from API), convert to milliseconds
     const timeDriven = tripsData.reduce((sum, t) => {
-      if (t.drivingDuration) return sum + t.drivingDuration;
+      if (t.drivingDuration != null) {
+        // drivingDuration is in seconds
+        return sum + (t.drivingDuration * 1000);
+      }
       if (t.start && t.stop) {
         return sum + getDuration(t.start, t.stop);
       }
@@ -243,7 +252,7 @@ export function useDeviceData(api, deviceId, dateRange) {
       daysDriven,
       fuelLevel: currentFuelLevel ? (currentFuelLevel > 1 ? currentFuelLevel : currentFuelLevel * 100) : null,
       distanceDriven,
-      timeDriven: typeof timeDriven === 'number' ? timeDriven : 0,
+      timeDriven,
       fuelEconomy,
       odometer: currentOdometer || deviceData?.odometer || null
     });
@@ -253,48 +262,54 @@ export function useDeviceData(api, deviceId, dateRange) {
    * Calculate usage breakdown (driving, idle, stopped percentages)
    */
   const calculateUsageBreakdown = useCallback((tripsData, range) => {
-    if (!tripsData || !range?.start || !range?.end) {
+    if (!tripsData || tripsData.length === 0 || !range?.start || !range?.end) {
       setUsageBreakdown({ driving: 0, idle: 0, stopped: 100 });
       return;
     }
 
+    // Total period in milliseconds
     const totalPeriod = getDuration(range.start, range.end);
     
-    // Sum driving time
-    let drivingTime = 0;
-    let idleTime = 0;
+    if (totalPeriod <= 0) {
+      setUsageBreakdown({ driving: 0, idle: 0, stopped: 100 });
+      return;
+    }
+
+    // Sum driving time and idle time from trips
+    // Geotab API returns drivingDuration and idlingDuration in SECONDS
+    let drivingTimeMs = 0;
+    let idleTimeMs = 0;
 
     tripsData.forEach(trip => {
-      // Driving duration
-      if (trip.drivingDuration) {
-        drivingTime += typeof trip.drivingDuration === 'number' 
-          ? trip.drivingDuration * 1000 // Convert seconds to ms if needed
-          : trip.drivingDuration;
+      // Driving duration - in seconds, convert to ms
+      if (trip.drivingDuration != null && trip.drivingDuration > 0) {
+        drivingTimeMs += trip.drivingDuration * 1000;
       } else if (trip.start && trip.stop) {
-        drivingTime += getDuration(trip.start, trip.stop);
+        // Fallback: calculate from start/stop times
+        drivingTimeMs += getDuration(trip.start, trip.stop);
       }
 
-      // Idle time
-      if (trip.idlingDuration) {
-        idleTime += typeof trip.idlingDuration === 'number'
-          ? trip.idlingDuration * 1000
-          : trip.idlingDuration;
+      // Idle time - in seconds, convert to ms
+      if (trip.idlingDuration != null && trip.idlingDuration > 0) {
+        idleTimeMs += trip.idlingDuration * 1000;
       }
     });
 
-    // Handle case where times might be in seconds
-    if (drivingTime > 0 && drivingTime < 1000000) {
-      drivingTime *= 1000; // Convert to ms
-    }
-    if (idleTime > 0 && idleTime < 1000000) {
-      idleTime *= 1000;
-    }
+    console.log('Usage breakdown calculation:', {
+      totalPeriodMs: totalPeriod,
+      totalPeriodHours: totalPeriod / (1000 * 60 * 60),
+      drivingTimeMs,
+      drivingTimeHours: drivingTimeMs / (1000 * 60 * 60),
+      idleTimeMs,
+      idleTimeHours: idleTimeMs / (1000 * 60 * 60),
+      tripsCount: tripsData.length
+    });
 
-    const stoppedTime = Math.max(0, totalPeriod - drivingTime - idleTime);
+    const stoppedTimeMs = Math.max(0, totalPeriod - drivingTimeMs - idleTimeMs);
 
-    const drivingPercent = totalPeriod > 0 ? (drivingTime / totalPeriod) * 100 : 0;
-    const idlePercent = totalPeriod > 0 ? (idleTime / totalPeriod) * 100 : 0;
-    const stoppedPercent = totalPeriod > 0 ? (stoppedTime / totalPeriod) * 100 : 100;
+    const drivingPercent = (drivingTimeMs / totalPeriod) * 100;
+    const idlePercent = (idleTimeMs / totalPeriod) * 100;
+    const stoppedPercent = (stoppedTimeMs / totalPeriod) * 100;
 
     setUsageBreakdown({
       driving: Math.min(100, Math.max(0, drivingPercent)),

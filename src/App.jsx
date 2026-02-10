@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useGeotabApi } from './hooks/useGeotabApi';
 import { useUnits } from './hooks/useUnits';
 import { useDeviceData } from './hooks/useDeviceData';
+import { useDarkMode } from './hooks/useDarkMode';
 import { getDefaultDateRange, getDateRangeFromPreset } from './utils/dateUtils';
 
 // Components

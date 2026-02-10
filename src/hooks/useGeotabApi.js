@@ -65,6 +65,56 @@ export function useGeotabApi(api) {
   }, [call]);
 
   /**
+   * Get all entities using GetFeed (for large datasets)
+   * Automatically handles pagination to get all results
+   */
+  const getAllWithFeed = useCallback(async (typeName, search = {}) => {
+    const allResults = [];
+    let resultsLimit = 5000; // Geotab's max per request
+    let fromVersion = '0';
+    
+    try {
+      while (true) {
+        const params = {
+          typeName,
+          search: {
+            ...search,
+            fromDate: search.fromDate,
+            toDate: search.toDate
+          },
+          resultsLimit,
+          fromVersion
+        };
+
+        const result = await call('GetFeed', params);
+        
+        if (!result || !result.data) {
+          break;
+        }
+
+        allResults.push(...result.data);
+
+        // Check if we got all results
+        if (result.data.length < resultsLimit || !result.toVersion) {
+          break;
+        }
+
+        fromVersion = result.toVersion;
+      }
+
+      return allResults;
+    } catch (error) {
+      console.error('Error in getAllWithFeed:', error);
+      // Fallback to regular Get with high limit
+      return call('Get', { 
+        typeName, 
+        search,
+        resultsLimit: 50000 
+      });
+    }
+  }, [call]);
+
+  /**
    * Get addresses from coordinates (reverse geocoding)
    */
   const getAddresses = useCallback((coordinates) => {
@@ -136,6 +186,7 @@ export function useGeotabApi(api) {
     multiCall,
     get,
     getCount,
+    getAllWithFeed,
     getAddresses,
     getSession,
     navigate,
