@@ -201,7 +201,7 @@ export function useDeviceData(api, deviceId, dateRange) {
       setOdometer(odometerResult?.[0]?.data || deviceData?.odometer || null);
 
       // Calculate usage stats
-      calculateUsageStats(tripsResult || [], deviceData, odometerResult?.[0]?.data, fuelLevelResult?.[0]?.data, fuelUsedResult || []);
+      calculateUsageStats(tripsResult || [], deviceData, odometerResult?.[0]?.data, fuelLevelResult?.[0]?.data, fuelUsedResult || [], enrichedFuelUps);
       
       // Calculate usage breakdown
       calculateUsageBreakdown(tripsResult || [], dateRange);
@@ -222,7 +222,7 @@ export function useDeviceData(api, deviceId, dateRange) {
   /**
    * Calculate usage statistics
    */
-  const calculateUsageStats = useCallback((tripsData, deviceData, currentOdometer, currentFuelLevel, fuelUsedData) => {
+  const calculateUsageStats = useCallback((tripsData, deviceData, currentOdometer, currentFuelLevel, fuelUsedData, fuelUpsData) => {
     if (!tripsData || tripsData.length === 0) {
       setUsageStats({
         daysDriven: 0,
@@ -254,8 +254,10 @@ export function useDeviceData(api, deviceId, dateRange) {
       return sum;
     }, 0);
 
-    // Calculate fuel economy from FuelUsed StatusData
+    // Calculate fuel economy - Primary method: FuelUsed StatusData
     let fuelEconomy = null;
+    let calculationMethod = null;
+    
     if (fuelUsedData && fuelUsedData.length > 0 && distanceDriven > 0) {
       // Get the first and last fuel used reading to calculate total consumption
       // Sort by date to ensure we get the correct range
@@ -269,20 +271,48 @@ export function useDeviceData(api, deviceId, dateRange) {
       // Total fuel consumed in the period (in liters)
       const fuelConsumed = lastReading - firstReading;
       
-      console.log('Fuel economy calculation:', {
+      console.log('Fuel economy calculation (FuelUsed):', {
         fuelDataPoints: fuelUsedData.length,
         firstReading,
         lastReading,
         fuelConsumed,
-        distanceDriven,
-        distanceKm: distanceDriven
+        distanceDriven
       });
       
       if (fuelConsumed > 0) {
         // Calculate L/100km
         fuelEconomy = (fuelConsumed / distanceDriven) * 100;
-        console.log('Calculated fuel economy:', fuelEconomy, 'L/100km');
+        calculationMethod = 'FuelUsed diagnostic';
+        console.log('Calculated fuel economy (FuelUsed):', fuelEconomy, 'L/100km');
       }
+    }
+    
+    // Fallback method: Calculate from fill-ups if FuelUsed data not available
+    if (!fuelEconomy && fuelUpsData && fuelUpsData.length > 0 && distanceDriven > 0) {
+      // Sum all fuel added from fill-ups
+      const totalFuelAdded = fuelUpsData.reduce((sum, fillUp) => {
+        return sum + (fillUp.volume || 0);
+      }, 0);
+      
+      console.log('Fuel economy calculation (Fill-ups fallback):', {
+        fillUpsCount: fuelUpsData.length,
+        totalFuelAdded,
+        distanceDriven
+      });
+      
+      if (totalFuelAdded > 0) {
+        // Calculate L/100km based on fuel added
+        // Note: This is an approximation as it assumes all fuel added was consumed
+        fuelEconomy = (totalFuelAdded / distanceDriven) * 100;
+        calculationMethod = 'Fill-up data (approximate)';
+        console.log('Calculated fuel economy (Fill-ups):', fuelEconomy, 'L/100km');
+      }
+    }
+    
+    if (fuelEconomy && calculationMethod) {
+      console.log(`Fuel economy: ${fuelEconomy.toFixed(2)} L/100km (method: ${calculationMethod})`);
+    } else if (distanceDriven > 0) {
+      console.log('Fuel economy unavailable: No FuelUsed diagnostic or fill-up data in this period');
     }
 
     setUsageStats({
