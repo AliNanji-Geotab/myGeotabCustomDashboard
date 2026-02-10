@@ -597,16 +597,15 @@ body {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   line-height: 1.2;
+  word-break: break-word;
 }
 
 .stat-label {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-top: var(--spacing-xs);
+  word-break: break-word;
 }
 
 /* ==========================================================================
