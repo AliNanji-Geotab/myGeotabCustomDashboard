@@ -18,6 +18,10 @@ import UsageBreakdown from './components/UsageBreakdown';
 import ExceptionsChart from './components/ExceptionsChart';
 import ExceptionsTable from './components/ExceptionsTable';
 import FuelUpsTable from './components/FuelUpsTable';
+import SpeedAnalysis from './components/SpeedAnalysis';
+import ExceptionsTimeline from './components/ExceptionsTimeline';
+import IdleTimeSummary from './components/IdleTimeSummary';
+import FuelLevelTrend from './components/FuelLevelTrend';
 
 /**
  * Main Dashboard App
@@ -36,6 +40,7 @@ function App({ api, state }) {
     loading: dataLoading,
     error: dataError,
     device,
+    trips,
     usageStats,
     usageBreakdown,
     exceptions,
@@ -169,12 +174,53 @@ function App({ api, state }) {
           />
         </section>
 
+        {/* Speed Analysis */}
+        <section className="dashboard-section">
+          <h2 className="section-title">Speed Analysis</h2>
+          <SpeedAnalysis 
+            trips={trips}
+            loading={dataLoading}
+            isMetric={isMetric}
+          />
+        </section>
+
+        {/* Idle Time Summary */}
+        <section className="dashboard-section">
+          <h2 className="section-title">Idle Time Analysis</h2>
+          <IdleTimeSummary 
+            trips={trips}
+            loading={dataLoading}
+            isMetric={isMetric}
+          />
+        </section>
+
+        {/* Exceptions Timeline */}
+        <section className="dashboard-section">
+          <h2 className="section-title">Exceptions Timeline</h2>
+          <ExceptionsTimeline 
+            exceptions={exceptions}
+            dateRange={dateRange}
+            loading={dataLoading}
+          />
+        </section>
+
         {/* Exceptions Chart */}
         <section className="dashboard-section">
           <h2 className="section-title">Exceptions by Type</h2>
           <ExceptionsChart 
             data={exceptionsByRule} 
             loading={dataLoading}
+          />
+        </section>
+
+        {/* Fuel Level Trend (Async) */}
+        <section className="dashboard-section">
+          <h2 className="section-title">Fuel Level Trend</h2>
+          <FuelLevelTrend 
+            api={api}
+            deviceId={selectedDeviceId}
+            dateRange={dateRange}
+            isMetric={isMetric}
           />
         </section>
 

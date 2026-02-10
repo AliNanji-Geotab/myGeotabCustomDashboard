@@ -93,18 +93,38 @@ export function getDateRangeFromPreset(preset) {
 /**
  * Format date for display
  * @param {Date|string} date - Date to format
- * @param {object} options - Intl.DateTimeFormat options
+ * @param {string|object} format - Format string or Intl.DateTimeFormat options
  * @returns {string}
  */
-export function formatDate(date, options = {}) {
+export function formatDate(date, format = {}) {
   if (!date) return 'N/A';
   const d = typeof date === 'string' ? new Date(date) : date;
+  
+  // Handle string format patterns
+  if (typeof format === 'string') {
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    switch (format) {
+      case 'YYYY-MM-DD':
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      case 'MMM D':
+        return `${monthNames[d.getMonth()]} ${day}`;
+      case 'MMM D, YYYY':
+        return `${monthNames[d.getMonth()]} ${day}, ${year}`;
+      default:
+        // If unrecognized, fall through to default behavior
+        break;
+    }
+  }
   
   const defaultOptions = {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    ...options
+    ...(typeof format === 'object' ? format : {})
   };
   
   return d.toLocaleDateString(undefined, defaultOptions);
