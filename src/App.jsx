@@ -156,7 +156,7 @@ function App({ api, state }) {
 
       {/* Main Content */}
       <main className="dashboard-content">
-        {/* Usage Stats Cards */}
+        {/* Usage Stats Cards - Full Width */}
         <section className="dashboard-section">
           <UsageStats 
             stats={usageStats} 
@@ -165,66 +165,69 @@ function App({ api, state }) {
           />
         </section>
 
-        {/* Usage Breakdown */}
-        <section className="dashboard-section">
-          <h2 className="section-title">Usage Breakdown</h2>
-          <UsageBreakdown 
-            breakdown={usageBreakdown} 
-            loading={dataLoading}
-          />
-        </section>
+        {/* 2-Column Grid for Charts */}
+        <div className="dashboard-grid">
+          {/* Usage Breakdown */}
+          <div className="dashboard-grid-item">
+            <h2 className="section-title">Usage Breakdown</h2>
+            <UsageBreakdown 
+              breakdown={usageBreakdown} 
+              loading={dataLoading}
+            />
+          </div>
 
-        {/* Speed Analysis */}
-        <section className="dashboard-section">
-          <h2 className="section-title">Speed Analysis</h2>
-          <SpeedAnalysis 
-            trips={trips}
-            loading={dataLoading}
-            isMetric={isMetric}
-          />
-        </section>
+          {/* Speed Analysis */}
+          <div className="dashboard-grid-item">
+            <h2 className="section-title">Speed Analysis</h2>
+            <SpeedAnalysis 
+              trips={trips}
+              loading={dataLoading}
+              isMetric={isMetric}
+            />
+          </div>
 
-        {/* Idle Time Summary */}
-        <section className="dashboard-section">
-          <h2 className="section-title">Idle Time Analysis</h2>
-          <IdleTimeSummary 
-            trips={trips}
-            loading={dataLoading}
-            isMetric={isMetric}
-          />
-        </section>
+          {/* Idle Time Summary */}
+          <div className="dashboard-grid-item">
+            <h2 className="section-title">Idle Time Analysis</h2>
+            <IdleTimeSummary 
+              trips={trips}
+              loading={dataLoading}
+              isMetric={isMetric}
+            />
+          </div>
 
-        {/* Exceptions Timeline */}
-        <section className="dashboard-section">
-          <h2 className="section-title">Exceptions Timeline</h2>
-          <ExceptionsTimeline 
-            exceptions={exceptions}
-            dateRange={dateRange}
-            loading={dataLoading}
-          />
-        </section>
+          {/* Exceptions Timeline */}
+          <div className="dashboard-grid-item">
+            <h2 className="section-title">Exceptions Timeline</h2>
+            <ExceptionsTimeline 
+              exceptions={exceptions}
+              dateRange={dateRange}
+              loading={dataLoading}
+            />
+          </div>
 
-        {/* Exceptions Chart */}
-        <section className="dashboard-section">
-          <h2 className="section-title">Exceptions by Type</h2>
-          <ExceptionsChart 
-            data={exceptionsByRule} 
-            loading={dataLoading}
-          />
-        </section>
+          {/* Exceptions by Type */}
+          <div className="dashboard-grid-item">
+            <h2 className="section-title">Exceptions by Type</h2>
+            <ExceptionsChart 
+              data={exceptionsByRule} 
+              loading={dataLoading}
+            />
+          </div>
 
-        {/* Fuel Level Trend (Async) */}
-        <section className="dashboard-section">
-          <h2 className="section-title">Fuel Level Trend</h2>
-          <FuelLevelTrend 
-            api={api}
-            deviceId={selectedDeviceId}
-            dateRange={dateRange}
-            isMetric={isMetric}
-          />
-        </section>
+          {/* Fuel Level Trend (Async) */}
+          <div className="dashboard-grid-item">
+            <h2 className="section-title">Fuel Level Trend</h2>
+            <FuelLevelTrend 
+              api={api}
+              deviceId={selectedDeviceId}
+              dateRange={dateRange}
+              isMetric={isMetric}
+            />
+          </div>
+        </div>
 
-        {/* Exceptions Table */}
+        {/* Tables - Full Width */}
         <section className="dashboard-section">
           <h2 className="section-title">Exception Details</h2>
           <ExceptionsTable 
@@ -235,7 +238,6 @@ function App({ api, state }) {
           />
         </section>
 
-        {/* Fuel-Ups Table */}
         <section className="dashboard-section">
           <h2 className="section-title">Fuel-Ups</h2>
           <FuelUpsTable 

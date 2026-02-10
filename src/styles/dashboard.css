@@ -443,6 +443,33 @@ body {
   margin-bottom: var(--spacing-xl);
 }
 
+/* Grid layout for charts */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.dashboard-grid-item {
+  min-width: 0; /* Prevent overflow */
+}
+
+.dashboard-grid-item--full {
+  grid-column: 1 / -1;
+}
+
+/* Mobile: single column */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-grid-item--full {
+    grid-column: 1;
+  }
+}
+
 .section-title {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
