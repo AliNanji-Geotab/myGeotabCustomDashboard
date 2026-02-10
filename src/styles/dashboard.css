@@ -184,6 +184,8 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bg-primary);
+  color-scheme: light dark;
 }
 
 body {
@@ -192,8 +194,9 @@ body {
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
-  background: var(--color-bg-primary);
+  background-color: var(--color-bg-primary);
   line-height: 1.6;
+  min-height: 100vh;
 }
 
 /* ==========================================================================
@@ -622,11 +625,23 @@ body {
 }
 
 .stacked-segment--driving {
-  background: linear-gradient(90deg, #10B981, #34D399);
+  background: linear-gradient(90deg, var(--color-driving), #34D399);
+}
+
+@media (prefers-color-scheme: dark) {
+  .stacked-segment--driving {
+    background: linear-gradient(90deg, #34D399, #6EE7B7);
+  }
 }
 
 .stacked-segment--idle {
-  background: linear-gradient(90deg, #F59E0B, #FBBF24);
+  background: linear-gradient(90deg, var(--color-idle), #FBBF24);
+}
+
+@media (prefers-color-scheme: dark) {
+  .stacked-segment--idle {
+    background: linear-gradient(90deg, #FBBF24, #FDE68A);
+  }
 }
 
 .stacked-segment--stopped {
@@ -685,6 +700,22 @@ body {
   height: 100%;
   transition: width var(--transition-slow);
   border-radius: var(--radius-full);
+}
+
+/* Breakdown color classes */
+.breakdown-color-dot--driving,
+.breakdown-bar-fill--driving {
+  background: var(--color-driving);
+}
+
+.breakdown-color-dot--idle,
+.breakdown-bar-fill--idle {
+  background: var(--color-idle);
+}
+
+.breakdown-color-dot--stopped,
+.breakdown-bar-fill--stopped {
+  background: var(--color-stopped);
 }
 
 .breakdown-empty {

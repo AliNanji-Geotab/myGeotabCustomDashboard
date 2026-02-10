@@ -4,13 +4,12 @@
  */
 
 import React from 'react';
-import { COLORS } from '../utils/constants';
 import { formatPercentage } from '../utils/formatters';
 
 /**
  * Single breakdown bar item
  */
-function BreakdownItem({ label, percentage, color, loading }) {
+function BreakdownItem({ label, percentage, colorClass, loading }) {
   if (loading) {
     return (
       <div className="breakdown-item breakdown-item--loading">
@@ -29,10 +28,7 @@ function BreakdownItem({ label, percentage, color, loading }) {
     <div className="breakdown-item">
       <div className="breakdown-header">
         <span className="breakdown-label">
-          <span 
-            className="breakdown-color-dot" 
-            style={{ backgroundColor: color }}
-          ></span>
+          <span className={`breakdown-color-dot breakdown-color-dot--${colorClass}`}></span>
           {label}
         </span>
         <span className="breakdown-percentage">
@@ -41,11 +37,8 @@ function BreakdownItem({ label, percentage, color, loading }) {
       </div>
       <div className="breakdown-bar">
         <div 
-          className="breakdown-bar-fill"
-          style={{ 
-            width: `${Math.min(100, Math.max(0, percentage))}%`,
-            backgroundColor: color 
-          }}
+          className={`breakdown-bar-fill breakdown-bar-fill--${colorClass}`}
+          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
           role="progressbar"
           aria-valuenow={percentage}
           aria-valuemin="0"
@@ -73,21 +66,27 @@ function StackedBar({ breakdown, loading }) {
 
   return (
     <div className="stacked-bar" role="img" aria-label="Usage breakdown visualization">
-      <div 
-        className="stacked-segment stacked-segment--driving"
-        style={{ width: `${driving}%`, backgroundColor: COLORS.driving }}
-        title={`Driving: ${formatPercentage(driving)}`}
-      ></div>
-      <div 
-        className="stacked-segment stacked-segment--idle"
-        style={{ width: `${idle}%`, backgroundColor: COLORS.idle }}
-        title={`Idle: ${formatPercentage(idle)}`}
-      ></div>
-      <div 
-        className="stacked-segment stacked-segment--stopped"
-        style={{ width: `${stopped}%`, backgroundColor: COLORS.stopped }}
-        title={`Stopped: ${formatPercentage(stopped)}`}
-      ></div>
+      {driving > 0 && (
+        <div 
+          className="stacked-segment stacked-segment--driving"
+          style={{ width: `${driving}%` }}
+          title={`Driving: ${formatPercentage(driving, false, 1)}`}
+        ></div>
+      )}
+      {idle > 0 && (
+        <div 
+          className="stacked-segment stacked-segment--idle"
+          style={{ width: `${idle}%` }}
+          title={`Idle: ${formatPercentage(idle, false, 1)}`}
+        ></div>
+      )}
+      {stopped > 0 && (
+        <div 
+          className="stacked-segment stacked-segment--stopped"
+          style={{ width: `${stopped}%` }}
+          title={`Stopped: ${formatPercentage(stopped, false, 1)}`}
+        ></div>
+      )}
     </div>
   );
 }
@@ -101,19 +100,19 @@ function UsageBreakdown({ breakdown, loading }) {
       key: 'driving', 
       label: 'Driving', 
       percentage: breakdown?.driving || 0, 
-      color: COLORS.driving 
+      colorClass: 'driving'
     },
     { 
       key: 'idle', 
       label: 'Idle', 
       percentage: breakdown?.idle || 0, 
-      color: COLORS.idle 
+      colorClass: 'idle'
     },
     { 
       key: 'stopped', 
       label: 'Stopped', 
       percentage: breakdown?.stopped || 0, 
-      color: COLORS.stopped 
+      colorClass: 'stopped'
     }
   ];
 
@@ -129,7 +128,7 @@ function UsageBreakdown({ breakdown, loading }) {
             key={item.key}
             label={item.label}
             percentage={item.percentage}
-            color={item.color}
+            colorClass={item.colorClass}
             loading={loading}
           />
         ))}
