@@ -8,6 +8,25 @@ import { DIAGNOSTICS } from '../utils/constants';
 import { toISOString, getUniqueDaysCount, getDuration } from '../utils/dateUtils';
 
 /**
+ * Parse Geotab TimeSpan string to seconds
+ * @param {string} timeSpan - TimeSpan string like "00:12:23" or "00:12:23.9320000"
+ * @returns {number} Total seconds
+ */
+function parseTimeSpan(timeSpan) {
+  if (!timeSpan || typeof timeSpan !== 'string') return 0;
+  
+  // Split by decimal point to handle fractional seconds
+  const [mainPart] = timeSpan.split('.');
+  const parts = mainPart.split(':');
+  
+  const hours = parseInt(parts[0]) || 0;
+  const minutes = parseInt(parts[1]) || 0;
+  const seconds = parseInt(parts[2]) || 0;
+  
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+/**
  * Hook to fetch all data for a specific device
  * @param {object} api - Geotab API object
  * @param {string} deviceId - Selected device ID
@@ -239,17 +258,6 @@ export function useDeviceData(api, deviceId, dateRange) {
     const tripDates = tripsData.map(t => new Date(t.start || t.startDateTime));
     const daysDriven = getUniqueDaysCount(tripDates);
 
-    // Helper function to parse TimeSpan
-    const parseTimeSpan = (timeSpan) => {
-      if (!timeSpan || typeof timeSpan !== 'string') return 0;
-      const [mainPart] = timeSpan.split('.');
-      const parts = mainPart.split(':');
-      const hours = parseInt(parts[0]) || 0;
-      const minutes = parseInt(parts[1]) || 0;
-      const seconds = parseInt(parts[2]) || 0;
-      return hours * 3600 + minutes * 60 + seconds;
-    };
-
     // Sum distance and time
     const distanceDriven = tripsData.reduce((sum, t) => sum + (t.distance || 0), 0);
     
@@ -337,25 +345,6 @@ export function useDeviceData(api, deviceId, dateRange) {
       odometer: currentOdometer || deviceData?.odometer || null
     });
   }, []);
-
-  /**
-   * Parse TimeSpan string to seconds
-   * @param {string} timeSpan - TimeSpan string like "00:12:23" or "00:12:23.9320000"
-   * @returns {number} Total seconds
-   */
-  const parseTimeSpan = (timeSpan) => {
-    if (!timeSpan || typeof timeSpan !== 'string') return 0;
-    
-    // Split by decimal point to handle fractional seconds
-    const [mainPart] = timeSpan.split('.');
-    const parts = mainPart.split(':');
-    
-    const hours = parseInt(parts[0]) || 0;
-    const minutes = parseInt(parts[1]) || 0;
-    const seconds = parseInt(parts[2]) || 0;
-    
-    return hours * 3600 + minutes * 60 + seconds;
-  };
 
   /**
    * Calculate usage breakdown (driving, idle, stopped percentages)
