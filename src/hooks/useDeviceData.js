@@ -124,10 +124,22 @@ export function useDeviceData(api, deviceId, dateRange) {
             resultsLimit: 1
           }],
           
-          // 5: All rules (for exception names)
+          // 5: Fuel used in date range (for fuel economy calculation)
+          ['Get', { 
+            typeName: 'StatusData', 
+            search: { 
+              diagnosticSearch: { id: DIAGNOSTICS.FUEL_USED },
+              deviceSearch: { id: deviceId },
+              fromDate,
+              toDate
+            },
+            resultsLimit: 50000
+          }],
+          
+          // 6: All rules (for exception names)
           ['Get', { typeName: 'Rule' }],
           
-          // 6: All drivers
+          // 7: All drivers
           ['Get', { typeName: 'User', search: { isDriver: true } }]
         ])
       ]);
@@ -139,6 +151,7 @@ export function useDeviceData(api, deviceId, dateRange) {
         fuelUpsResult,
         fuelLevelResult,
         odometerResult,
+        fuelUsedResult,
         rulesResult,
         driversResult
       ] = otherResults;
@@ -188,7 +201,7 @@ export function useDeviceData(api, deviceId, dateRange) {
       setOdometer(odometerResult?.[0]?.data || deviceData?.odometer || null);
 
       // Calculate usage stats
-      calculateUsageStats(tripsResult || [], deviceData, odometerResult?.[0]?.data, fuelLevelResult?.[0]?.data);
+      calculateUsageStats(tripsResult || [], deviceData, odometerResult?.[0]?.data, fuelLevelResult?.[0]?.data, fuelUsedResult || []);
       
       // Calculate usage breakdown
       calculateUsageBreakdown(tripsResult || [], dateRange);
@@ -209,7 +222,7 @@ export function useDeviceData(api, deviceId, dateRange) {
   /**
    * Calculate usage statistics
    */
-  const calculateUsageStats = useCallback((tripsData, deviceData, currentOdometer, currentFuelLevel) => {
+  const calculateUsageStats = useCallback((tripsData, deviceData, currentOdometer, currentFuelLevel, fuelUsedData) => {
     if (!tripsData || tripsData.length === 0) {
       setUsageStats({
         daysDriven: 0,
@@ -241,11 +254,35 @@ export function useDeviceData(api, deviceId, dateRange) {
       return sum;
     }, 0);
 
-    // Calculate fuel economy (if fuel data available)
-    const fuelUsed = tripsData.reduce((sum, t) => sum + (t.fuelUsed || 0), 0);
+    // Calculate fuel economy from FuelUsed StatusData
     let fuelEconomy = null;
-    if (fuelUsed > 0 && distanceDriven > 0) {
-      fuelEconomy = (fuelUsed / distanceDriven) * 100; // L/100km
+    if (fuelUsedData && fuelUsedData.length > 0 && distanceDriven > 0) {
+      // Get the first and last fuel used reading to calculate total consumption
+      // Sort by date to ensure we get the correct range
+      const sortedFuelData = [...fuelUsedData].sort((a, b) => 
+        new Date(a.dateTime) - new Date(b.dateTime)
+      );
+      
+      const firstReading = sortedFuelData[0]?.data || 0;
+      const lastReading = sortedFuelData[sortedFuelData.length - 1]?.data || 0;
+      
+      // Total fuel consumed in the period (in liters)
+      const fuelConsumed = lastReading - firstReading;
+      
+      console.log('Fuel economy calculation:', {
+        fuelDataPoints: fuelUsedData.length,
+        firstReading,
+        lastReading,
+        fuelConsumed,
+        distanceDriven,
+        distanceKm: distanceDriven
+      });
+      
+      if (fuelConsumed > 0) {
+        // Calculate L/100km
+        fuelEconomy = (fuelConsumed / distanceDriven) * 100;
+        console.log('Calculated fuel economy:', fuelEconomy, 'L/100km');
+      }
     }
 
     setUsageStats({
