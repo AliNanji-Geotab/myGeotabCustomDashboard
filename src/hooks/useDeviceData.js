@@ -239,14 +239,27 @@ export function useDeviceData(api, deviceId, dateRange) {
     const tripDates = tripsData.map(t => new Date(t.start || t.startDateTime));
     const daysDriven = getUniqueDaysCount(tripDates);
 
+    // Helper function to parse TimeSpan
+    const parseTimeSpan = (timeSpan) => {
+      if (!timeSpan || typeof timeSpan !== 'string') return 0;
+      const [mainPart] = timeSpan.split('.');
+      const parts = mainPart.split(':');
+      const hours = parseInt(parts[0]) || 0;
+      const minutes = parseInt(parts[1]) || 0;
+      const seconds = parseInt(parts[2]) || 0;
+      return hours * 3600 + minutes * 60 + seconds;
+    };
+
     // Sum distance and time
     const distanceDriven = tripsData.reduce((sum, t) => sum + (t.distance || 0), 0);
     
-    // drivingDuration is in seconds (TimeSpan format from API), convert to milliseconds
+    // drivingDuration is TimeSpan format ("HH:MM:SS"), parse and convert to milliseconds
     const timeDriven = tripsData.reduce((sum, t) => {
-      if (t.drivingDuration != null) {
-        // drivingDuration is in seconds
-        return sum + (t.drivingDuration * 1000);
+      if (t.drivingDuration) {
+        const seconds = parseTimeSpan(t.drivingDuration);
+        if (seconds > 0) {
+          return sum + (seconds * 1000);
+        }
       }
       if (t.start && t.stop) {
         return sum + getDuration(t.start, t.stop);
@@ -326,6 +339,25 @@ export function useDeviceData(api, deviceId, dateRange) {
   }, []);
 
   /**
+   * Parse TimeSpan string to seconds
+   * @param {string} timeSpan - TimeSpan string like "00:12:23" or "00:12:23.9320000"
+   * @returns {number} Total seconds
+   */
+  const parseTimeSpan = (timeSpan) => {
+    if (!timeSpan || typeof timeSpan !== 'string') return 0;
+    
+    // Split by decimal point to handle fractional seconds
+    const [mainPart] = timeSpan.split('.');
+    const parts = mainPart.split(':');
+    
+    const hours = parseInt(parts[0]) || 0;
+    const minutes = parseInt(parts[1]) || 0;
+    const seconds = parseInt(parts[2]) || 0;
+    
+    return hours * 3600 + minutes * 60 + seconds;
+  };
+
+  /**
    * Calculate usage breakdown (driving, idle, stopped percentages)
    */
   const calculateUsageBreakdown = useCallback((tripsData, range) => {
@@ -343,22 +375,28 @@ export function useDeviceData(api, deviceId, dateRange) {
     }
 
     // Sum driving time and idle time from trips
-    // Geotab API returns drivingDuration and idlingDuration in SECONDS
+    // Geotab API returns drivingDuration and idlingDuration as TimeSpan strings
     let drivingTimeMs = 0;
     let idleTimeMs = 0;
 
     tripsData.forEach(trip => {
-      // Driving duration - in seconds, convert to ms
-      if (trip.drivingDuration != null && trip.drivingDuration > 0) {
-        drivingTimeMs += trip.drivingDuration * 1000;
+      // Driving duration - parse TimeSpan format
+      if (trip.drivingDuration) {
+        const seconds = parseTimeSpan(trip.drivingDuration);
+        if (seconds > 0) {
+          drivingTimeMs += seconds * 1000;
+        }
       } else if (trip.start && trip.stop) {
         // Fallback: calculate from start/stop times
         drivingTimeMs += getDuration(trip.start, trip.stop);
       }
 
-      // Idle time - in seconds, convert to ms
-      if (trip.idlingDuration != null && trip.idlingDuration > 0) {
-        idleTimeMs += trip.idlingDuration * 1000;
+      // Idle time - parse TimeSpan format
+      if (trip.idlingDuration) {
+        const seconds = parseTimeSpan(trip.idlingDuration);
+        if (seconds > 0) {
+          idleTimeMs += seconds * 1000;
+        }
       }
     });
 
